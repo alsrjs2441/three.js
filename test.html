@@ -9,8 +9,18 @@
         }
 
         canvas {
+            margin-left: 100px;
             width: 100%;
             height: 100%;
+        }
+
+        nav {
+            height: 100%;
+            width: 200px;
+            background-color: #fff;
+            position: fixed !important;
+            z-index: 1;
+            overflow: auto
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
@@ -20,19 +30,38 @@
     <script src="js/three.js"></script>
     <script src="js/three.min.js"></script>
     <script src="js/OrbitControls.js"></script>
-    <script src="js/GLTFLoader.js"></script>
     <script src="js/threex.domevents.js"></script>
+    <script src="js/THREE.MeshLine.js"></script>
+    <script src="js/dat.gui.min.js"></script>
 
 
-    <div id="app">
-        <!-- <button onclick="Insert()">value</button> -->
-        x : <input type="text" name="x" v-model="x"> <br>
-        y : <input type="text" name="y" v-model="y"> <br>
-        z : <input type="text" name="z" v-model="z"> <br>
-        <button onclick="Insert()">add</button>
-    </div>
-    <div id="app2"></div>
+
+    <nav>
+        <div id="app">
+            <h3>cube</h3> <br>
+            <!-- <button onclick="Insert()">value</button> -->
+            x : <input type="text" name="x" v-model="x"> <br>
+            y : <input type="text" name="y" v-model="y"> <br>
+            z : <input type="text" name="z" v-model="z"> <br>
+            <button onclick="Insert()">add</button>
+        </div>
+        <div id="app2">
+            <h3>sphere</h3> <br>
+            x : <input type="text" name="x" v-model="x"> <br>
+            y : <input type="text" name="y" v-model="y"> <br>
+            z : <input type="text" name="z" v-model="z"> <br>
+            <button onclick="Insert2()">add</button>
+        </div>
+        <div id="app3">
+            start : <input type="text" name="start" v-model="first.id"> <br>
+            end : <input type="text" name="start" v-model="second.id"> <br>
+            flow : <input type="text" name="flow" v-model="scn"> <br>
+            <button onclick="flow()">flow</button>
+        </div>
+    </nav>
+
     <script>
+
         let vm = new Vue({
             el: "#app",
             data: {
@@ -43,28 +72,34 @@
             }
         })
 
-        let vm2 = new Vue({
+        let sp = new Vue({
             el: "#app2",
             data: {
-                first: { x: 0, y: 0, z: 0 },
-                second: { x: 0, y: 0, z: 0 }
+                x: 0,
+                y: 0,
+                z: 0,
+                done: 0
             }
         })
+
+        let vm2 = new Vue({
+            el: "#app3",
+            data: {
+                first: { x: 0, y: 0, z: 0, id: 0 },
+                second: { x: 0, y: 0, z: 0, id: 0 },
+                linenum : 0,
+                scn : 0
+            }
+        })
+
         let num = [];
         let tn = 0;
-        function Insert(x, y, z) {
-            x = vm.x
-            y = vm.y
-            z = vm.z
-            const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-            cubes.push(makeInstance(geometry, 0xFFFFFF, x, y, z))
-            num.push(0)
-            addevent(tn)
-            tn++;
-        }
+        let cubenum = 0;
+
 
         var scene = new THREE.Scene();
-        var camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 5000);
+        scene.background = new THREE.Color(0x000000);
+        var camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10000);
         camera.position.z = 5;
         var renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -80,17 +115,28 @@
 
         controls = new THREE.OrbitControls(camera, renderer.domElement)
 
-        const boxWidth = 1;
-        const boxHeight = 1;
-        const boxDepth = 1;
+        const boxWidth = 2;
+        const boxHeight = 2;
+        const boxDepth = 2;
         const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
 
+        //큐브
+        function Insert(x, y, z) {
+            x = vm.x
+            y = vm.y
+            z = vm.z
+            const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+            cubes.push(makeInstance(geometry, 0x4B8FC5, x, y, z))
+            addevent(tn)
+            tn++;
+        }
+
         function makeInstance(geometry, color, x, y, z) {
-            const material = new THREE.MeshBasicMaterial({ color, wireframe: true });
+            const material = new THREE.MeshBasicMaterial({ color, wireframe: false });
 
             const cube = new THREE.Mesh(geometry, material);
             scene.add(cube);
-
+            console.log(cube.id)
             cube.position.x = x;
             cube.position.y = y;
             cube.position.z = z;
@@ -101,7 +147,7 @@
         const cubes = [
 
         ];
-        let target = [0, 0];
+        let target = [];
         const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
         let time = 2;
         function addevent(i) {
@@ -110,38 +156,239 @@
                     vm2.first.x = cubes[i].position.x;
                     vm2.first.y = cubes[i].position.y;
                     vm2.first.z = cubes[i].position.z;
+                    vm2.first.id = cubes[i].id;
+                    vm2.linenum = cubes[i].id
                     time--;
                 } else if (time == 1) {
                     vm2.second.x = cubes[i].position.x;
                     vm2.second.y = cubes[i].position.y;
                     vm2.second.z = cubes[i].position.z;
-                    linemaker();
+                    vm2.second.id = cubes[i].id;
+                    vm2.linenum +=""+ cubes[i].id;
+                    linemaker2();
                     time = 2;
                 }
             })
         }
+
+        //원
+        let ts = 0;
+        const spheres = [
+
+        ];
+        function Insert2(x, y, z) {
+            x = sp.x
+            y = sp.y
+            z = sp.z
+            const geometry = new THREE.SphereGeometry(1, 32, 32);
+            spheres.push(makesphere(geometry, x, y, z))
+            addevent2(ts)
+            ts++;
+        }
+
+        function makesphere(geometry, x, y, z) {
+
+            const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+
+            const sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+            console.log(sphere);// 여기서도 객체 나옴
+            sphere.position.x = x;
+            sphere.position.y = y;
+            sphere.position.z = z;
+
+            return sphere;
+        }
+        // const geometry1 = new THREE.SphereGeometry(0.5, 32, 32);
+        //     const material1 = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+
+        //     const sphere = new THREE.Mesh(geometry1, material1);
+        //     scene.add(sphere);
+        //     console.log(sphere);
+        function addevent2(i) {
+            domEvents.addEventListener(spheres[i], 'click', event => {
+                if (time == 2) {
+                    vm2.first.x = spheres[i].position.x;
+                    vm2.first.y = spheres[i].position.y;
+                    vm2.first.z = spheres[i].position.z;
+                    vm2.first.id = spheres[i].id;
+                    vm2.linenum = spheres[i].id;
+                    time--;
+                } else if (time == 1) {
+                    vm2.second.x = spheres[i].position.x;
+                    vm2.second.y = spheres[i].position.y;
+                    vm2.second.z = spheres[i].position.z;
+                    vm2.second.id = spheres[i].id;
+                    vm2.linenum +=""+ spheres[i].id;
+                    linemaker2();
+                    time = 2;
+                }
+            })
+        }
+
+        // const curve = new THREE.SplineCurve([
+        //     new THREE.Vector2(-10, 0),
+        //     // new THREE.Vector2(-5, 5),
+        //     // new THREE.Vector2(0, 0),
+        //     // new THREE.Vector2(5, -5),
+        //     new THREE.Vector2(10, 0)
+        // ]);
+
+        // const points = curve.getPoints(100);
+        // const geometry3 = new THREE.BufferGeometry().setFromPoints(points);
+
+        // const material3 = new THREE.LineBasicMaterial({ color: 0x0000ff });
+
+        // // Create the final object to add to the scene
+        // const splineObject = new THREE.Line(geometry3, material3);
+        // scene.add(splineObject)
+
+        //선
+        let temp;
+        const lines = [
+
+        ];
+        let ln=0;
         function linemaker() {
-            const material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+
+            const material = new THREE.LineBasicMaterial({ color: 0x0000ff, linewidth: 10 });
+            const geometry1 = new THREE.Geometry();
 
             const points = [];
             points.push(new THREE.Vector3(vm2.first.x, vm2.first.y, vm2.first.z));
             points.push(new THREE.Vector3(vm2.second.x, vm2.second.y, vm2.second.z));
 
             const linegeometry = new THREE.BufferGeometry().setFromPoints(points);
+            geometry1.vertices.push(new THREE.Vector3(vm2.first.x, vm2.first.y, vm2.first.z));
+            geometry1.vertices.push(new THREE.Vector3(vm2.second.x, vm2.second.y, vm2.second.z));
+            const line2 = new MeshLine();
+            line2.setPoints(points);
+            line2.setPoints(geometry1, p => 2);
+
 
             const line = new THREE.Line(linegeometry, material);
+            const mesh = new THREE.Mesh(line2, material);
+            scene.add(mesh);
+            temp = line
             scene.add(line);
+            console.log(temp)
+        }
+        function linemaker2() {
+
+            
+            const geometry1 = new THREE.Geometry();
+
+            const points = [];
+            points.push(new THREE.Vector3(vm2.first.x, vm2.first.y, vm2.first.z));
+            points.push(new THREE.Vector3(vm2.second.x, vm2.second.y, vm2.second.z));
+
+            geometry1.vertices.push(new THREE.Vector3(vm2.first.x, vm2.first.y, vm2.first.z));
+            geometry1.vertices.push(new THREE.Vector3(vm2.second.x, vm2.second.y, vm2.second.z));
+            const line2 = new MeshLine();
+            line2.setPoints(points); 
+            line2.setPoints(geometry1, p => 0.1);
+
+            const material = new MeshLineMaterial({ color: 0x0000ff , lineWidth: 0.2});
+            const mesh = new THREE.Mesh(line2, material);
+            console.log(mesh)
+            let j = new Object;
+            j.name = vm2.linenum;
+            j.mesh = mesh;
+            let check = 1;
+            for(let i =0; i < lines.length; i++){
+                console.log(lines[i].name);
+                if(lines[i].name === j.name){
+                    check=0;
+                    break;
+                }
+            }
+            console.log(check)
+            if(check==1){
+                lines.push(j)
+                console.log(lines)
+                scene.add(mesh);
+            }
         }
 
+        function flow() {
+            for(let i =0; i < lines.length; i++){
+                if(lines[i].name == vm2.scn){
+                    const sline = lines[i].mesh
+                    sline.material.lineWidth += 0.1;
+                }
+            }
+            const mesh = new THREE.Mesh(sline.geometry,sline.material)
+            scene.add(mesh);
+            console.log(mesh)
+            console.log(1);
+        }
+
+        function addevent3(i) {
+            domEvents.addEventListener(lines[i].mesh, 'click', event => {
+                console.log(lines[i].name)
+            })
+        }
+        //면
+        const planeGeometry = new THREE.PlaneBufferGeometry(20, 20);
+        planeGeometry.rotateX(- Math.PI / 2);
+        const planeMaterial = new THREE.ShadowMaterial({ opacity: 0.2 });
+
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.position.y = - 200;
+        plane.receiveShadow = true;
+        scene.add(plane);
 
         //빛
-        var ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.3);
-        scene.add(ambientLight);
+        scene.add(new THREE.AmbientLight(0xf0f0f0));
+        const light = new THREE.SpotLight(0xffffff, 1.5);
+        light.position.set(0, 1500, 200);
+        light.angle = Math.PI * 0.2;
+        light.castShadow = true;
+        light.shadow.camera.near = 200;
+        light.shadow.camera.far = 2000;
+        light.shadow.bias = - 0.000222;
+        light.shadow.mapSize.width = 1024;
+        light.shadow.mapSize.height = 1024;
+        scene.add(light);
+
         var update = function () {
             if (num[target[0]] == 1) {
                 target[1].rotation.x += 0.10;
             }
         };
+        // Insert(0, 0, 0)
+        var controls = new function () {
+            this.x = 0;
+            this.y = 5;
+            this.z = 0;
+            this.id = 16;
+            this.redraw = function () {
+                var cube = cubes[id];
+                console.log(id);
+                cube.position.set(controls.spherePosX, controls.spherePosY, controls.spherePosZ);
+                scene.add(cube);
+            };
+        };
+
+
+        function changer(id, x, y, z) {
+            this.id = id;
+            console.log(id);
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        let change = new changer(0, 0, 0, 0);
+        //GUI
+        const gui = new dat.GUI();
+        gui.add(controls, "id");
+        gui.add(controls, "x");
+        gui.add(controls, "y");
+        gui.add(controls, "z");
+        gui.open();
+
+
 
         var render = function () {
 
